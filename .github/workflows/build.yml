@@ -1,4 +1,4 @@
-name: Build QMI Packages for BPI-R4
+name: Build QMI Packages with official OpenWrt SDK
 
 on:
   push:
@@ -9,31 +9,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk \
-          gettext libncurses-dev libssl-dev rsync \
-          unzip zlib1g-dev file wget python3-pip
-        pip install gdown
+          gettext libncurses-dev libssl-dev python3-distutils rsync \
+          unzip zlib1g-dev file wget
 
-    - name: Download MP4.0 SDK from Google Drive
+    - name: Download OpenWrt SDK (mediatek/filogic)
       run: |
-        gdown 1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r -O sdk.zip
-        unzip sdk.zip
-        mv BPI-R4-BE1350-WIFI_MP4_0-SDK-20240620 sdk
+        wget https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/openwrt-sdk-mediatek-filogic_gcc-13.2.0_musl.Linux-x86_64.tar.xz
+        tar -xf openwrt-sdk-mediatek-filogic_gcc-13.2.0_musl.Linux-x86_64.tar.xz
+        mv openwrt-sdk-mediatek-filogic* sdk
 
-    - name: Build selected packages
+    - name: Build packages
       run: |
         cd sdk
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         make defconfig
         make package/network/utils/uqmi/compile -j2 V=s
-        make package/kernel/linux/compile -j2 V=s
         make package/network/utils/comgt/compile -j2 V=s
         make package/network/utils/usb-modeswitch/compile -j2 V=s
         make package/network/utils/wwan/compile -j2 V=s
