@@ -1,0 +1,39 @@
+name: Build QMI Packages for BPI-R4
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential clang flex bison g++ gawk \
+          gettext libncurses-dev libssl-dev python3-distutils rsync \
+          unzip zlib1g-dev file wget
+
+    - name: Download MP4.0 SDK
+      run: |
+        wget -O sdk.zip "https://drive.google.com/uc?export=download&id=1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r"
+        unzip sdk.zip
+        mv openwrt sdk
+        cd sdk
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        make defconfig
+        make package/network/utils/uqmi/compile -j2 V=s
+        make package/kernel/linux/compile -j2 V=s
+
+    - name: Upload built packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: ipk-packages
+        path: |
+          sdk/bin/packages/aarch64_cortex-a53/base/*.ipk
