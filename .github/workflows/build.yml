@@ -22,9 +22,9 @@ jobs:
 
     - name: Download MP4.0 SDK from Google Drive
       run: |
-        gdown --id 1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r -O sdk.zip
+        gdown 1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r -O sdk.zip
         unzip sdk.zip
-        mv openwrt sdk
+        mv BPI-R4-BE1350-WIFI_MP4_0-SDK-20240620 sdk
 
     - name: Build selected packages
       run: |
@@ -34,6 +34,10 @@ jobs:
         make defconfig
         make package/network/utils/uqmi/compile -j2 V=s
         make package/kernel/linux/compile -j2 V=s
+        make package/network/utils/comgt/compile -j2 V=s
+        make package/network/utils/usb-modeswitch/compile -j2 V=s
+        make package/network/utils/wwan/compile -j2 V=s
+        make package/network/utils/luci-proto-qmi/compile -j2 V=s
 
     - name: Upload built packages
       uses: actions/upload-artifact@v4
