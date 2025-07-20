@@ -9,42 +9,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install Build Dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk \
-          gettext libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev \
-          file wget zstd
+          gettext libncurses-dev libssl-dev python3 zstd rsync unzip file wget
 
-    - name: Download and extract OpenWrt SDK
+    - name: Download and Extract OpenWrt SDK
       run: |
         wget https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/openwrt-sdk-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst
         tar --use-compress-program=unzstd -xf openwrt-sdk-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst
-        mv openwrt-sdk-mediatek-filogic* sdk
+        SDK_DIR=$(find . -maxdepth 1 -type d -name "openwrt-sdk-mediatek-filogic*" | head -n1)
+        mv "$SDK_DIR" sdk
 
-    - name: Prepare and build QMI packages
+    - name: Build QMI Packages
       run: |
         cd sdk
         ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        ./scripts/feeds install uqmi luci-proto-qmi
 
         make defconfig
-
         make package/network/utils/uqmi/compile -j$(nproc) V=s
-        make package/kernel/linux/compile V=s
-        make package/network/utils/comgt/compile V=s
-        make package/network/utils/comgt-ncm/compile V=s
-        make package/network/utils/comgt-directip/compile V=s
-        make package/kernel/usb/compile V=s
-        make package/network/utils/modemmanager/compile V=s
-        make package/network/services/luci-proto-qmi/compile V=s
+        make package/network/utils/comgt/compile -j$(nproc) V=s
+        make package/network/utils/modemmanager/compile -j$(nproc) V=s
+        make package/network/services/luci-proto-qmi/compile -j$(nproc) V=s
 
-    - name: Upload built packages
+    - name: Upload Built IPK Packages
       uses: actions/upload-artifact@v4
       with:
-        name: ipk-packages
+        name: qmi-ipks
         path: |
-          sdk/bin/packages/*/*.ipk
+          sdk/bin/packages/*/*/*.ipk
