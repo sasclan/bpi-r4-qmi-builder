@@ -1,4 +1,4 @@
-name: Build QMI Packages with official OpenWrt SDK
+name: Build QMI Packages for BPI-R4
 
 on:
   push:
@@ -9,34 +9,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk \
-          gettext libncurses-dev libssl-dev python3-pip rsync \
-          unzip zlib1g-dev file wget
+          gettext libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev \
+          file wget zstd
 
-    - name: Download OpenWrt SDK (mediatek/filogic)
+    - name: Download and extract OpenWrt SDK
       run: |
-        wget https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/openwrt-sdk-mediatek-filogic_gcc-13.2.0_musl.Linux-x86_64.tar.xz
-        tar -xf openwrt-sdk-mediatek-filogic_gcc-13.2.0_musl.Linux-x86_64.tar.xz
+        wget https://downloads.openwrt.org/snapshots/targets/mediatek/filogic/openwrt-sdk-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+        tar --use-compress-program=unzstd -xf openwrt-sdk-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst
         mv openwrt-sdk-mediatek-filogic* sdk
 
-    - name: Build packages
+    - name: Prepare and build QMI packages
       run: |
         cd sdk
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+
         make defconfig
-        make package/network/utils/uqmi/compile -j2 V=s
-        make package/network/utils/comgt/compile -j2 V=s
-        make package/network/utils/usb-modeswitch/compile -j2 V=s
-        make package/network/utils/wwan/compile -j2 V=s
-        make package/network/utils/luci-proto-qmi/compile -j2 V=s
+
+        make package/network/utils/uqmi/compile -j$(nproc) V=s
+        make package/kernel/linux/compile V=s
+        make package/network/utils/comgt/compile V=s
+        make package/network/utils/comgt-ncm/compile V=s
+        make package/network/utils/comgt-directip/compile V=s
+        make package/kernel/usb/compile V=s
+        make package/network/utils/modemmanager/compile V=s
+        make package/network/services/luci-proto-qmi/compile V=s
 
     - name: Upload built packages
       uses: actions/upload-artifact@v4
       with:
         name: ipk-packages
         path: |
-          sdk/bin/packages/aarch64_cortex-a53/base/*.ipk
+          sdk/bin/packages/*/*.ipk
