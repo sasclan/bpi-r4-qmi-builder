@@ -17,13 +17,17 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk \
           gettext libncurses-dev libssl-dev rsync \
-          unzip zlib1g-dev file wget
+          unzip zlib1g-dev file wget python3-pip
+        pip install gdown
 
-    - name: Download MP4.0 SDK
+    - name: Download MP4.0 SDK from Google Drive
       run: |
-        wget -O sdk.zip "https://drive.google.com/uc?export=download&id=1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r"
+        gdown --id 1U0tnvoaxDujO1q5QNxnw0i2d93X2zi9r -O sdk.zip
         unzip sdk.zip
         mv openwrt sdk
+
+    - name: Build selected packages
+      run: |
         cd sdk
         ./scripts/feeds update -a
         ./scripts/feeds install -a
