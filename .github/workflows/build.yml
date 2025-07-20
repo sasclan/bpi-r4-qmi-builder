@@ -32,7 +32,7 @@ jobs:
         make package/kernel/linux/compile -j2 V=s
 
     - name: Upload built packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ipk-packages
         path: |
